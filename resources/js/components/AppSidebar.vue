@@ -23,23 +23,28 @@ const mainNavItems = [
         icon: LayoutGrid,
     },
     {
+        title: 'Manage Post',
+        href: '/posts',
+        icon: Folder,
+    },
+    {
         title: 'Post Antrian',
-        href: `${dashboard()}#post-antrian`,
+        href: '/posts?status=queued',
         icon: Send,
     },
     {
         title: 'Post Terjadwal',
-        href: `${dashboard()}#post-terjadwal`,
+        href: '/posts?status=scheduled',
         icon: Clock,
     },
     {
         title: 'Post Selesai',
-        href: `${dashboard()}#post-selesai`,
+        href: '/posts?status=completed',
         icon: CheckCircle2,
     },
     {
         title: 'Post Gagal',
-        href: `${dashboard()}#post-gagal`,
+        href: '/posts?status=failed',
         icon: AlertTriangle,
     },
 ];

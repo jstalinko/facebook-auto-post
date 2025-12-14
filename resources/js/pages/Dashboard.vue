@@ -14,8 +14,8 @@
             </div>
 
             <div v-else class="space-y-6">
-                <div class="grid gap-4 lg:grid-cols-3">
-                    <Card class="lg:col-span-2">
+                <div class="grid gap-4 xl:grid-cols-3">
+                    <Card class="xl:col-span-2">
                         <CardHeader class="flex flex-wrap items-center justify-between gap-2">
                             <div>
                                 <CardTitle>Akun Facebook</CardTitle>
@@ -48,32 +48,6 @@
                                             Bersihkan Pilihan
                                         </Button>
                                     </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Ringkasan Post</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="space-y-3 text-sm">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-muted-foreground">Antrian</span>
-                                    <span class="font-semibold">{{ queuedLogs.length }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-muted-foreground">Terjadwal</span>
-                                    <span class="font-semibold">{{ scheduledLogs.length }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-muted-foreground">Selesai</span>
-                                    <span class="font-semibold">{{ completedLogs.length }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-muted-foreground">Gagal</span>
-                                    <span class="font-semibold">{{ failedLogs.length }}</span>
                                 </div>
                             </div>
                         </CardContent>
@@ -181,52 +155,6 @@
                     </CardContent>
                 </Card>
 
-                <!-- STATUS LOGS -->
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-semibold">Monitor Postingan</h2>
-                        <p class="text-sm text-muted-foreground">Lihat status job antrian, terjadwal, dan selesai.</p>
-                    </div>
-
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <Card id="post-antrian">
-                            <CardHeader>
-                                <CardTitle>Post Antrian</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <StatusTable :items="queuedLogs" empty-text="Belum ada antrian." />
-                            </CardContent>
-                        </Card>
-
-                        <Card id="post-terjadwal">
-                            <CardHeader>
-                                <CardTitle>Post Terjadwal</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <StatusTable :items="scheduledLogs" empty-text="Belum ada jadwal." />
-                            </CardContent>
-                        </Card>
-
-                        <Card id="post-selesai" class="xl:col-span-1">
-                            <CardHeader>
-                                <CardTitle>Post Selesai</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <StatusTable :items="completedLogs" empty-text="Belum ada post selesai." />
-                            </CardContent>
-                        </Card>
-
-                        <Card id="post-gagal" class="md:col-span-2 xl:col-span-3">
-                            <CardHeader>
-                                <CardTitle>Post Gagal</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <StatusTable :items="failedLogs" empty-text="Tidak ada post gagal." />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-
                 <!-- CREATE POST MODAL -->
                 <Dialog v-model:open="showPostModal">
                     <DialogContent class="sm:max-w-lg">
@@ -323,7 +251,6 @@ const page = usePage()
 
 const facebookUsers = computed(() => page.props.facebookUsers || [])
 const facebookPages = computed(() => page.props.facebookPages || [])
-const postLogs = computed(() => page.props.postLogs || [])
 const facebookConnected = computed(() => facebookUsers.value.length > 0)
 
 const selectedFacebookUserId = ref(facebookUsers.value[0]?.id || null)
@@ -342,11 +269,6 @@ const bulkPostType = ref('text')
 const bulkPostMessage = ref('')
 const bulkMediaFile = ref(null)
 const bulkScheduledAt = ref('')
-
-const queuedLogs = computed(() => postLogs.value.filter(log => ['queued', 'processing'].includes(log.status)))
-const scheduledLogs = computed(() => postLogs.value.filter(log => log.status === 'scheduled'))
-const completedLogs = computed(() => postLogs.value.filter(log => log.status === 'completed'))
-const failedLogs = computed(() => postLogs.value.filter(log => log.status === 'failed'))
 
 function openCreatePost(p) {
     selectedPage.value = p
