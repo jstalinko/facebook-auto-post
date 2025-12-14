@@ -85,13 +85,19 @@ class FacebookController extends Controller
     }
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // Hapus dd() setelah pengujian.
+        // dd($request->scheduled_at);
+
+        $rules = [
             'page_id' => ['required', 'string'],
             'type' => ['required', Rule::in(['text', 'photo', 'video'])],
             'message' => ['nullable', 'string'],
-            'scheduled_at' => ['nullable', 'date'],
+
+            'scheduled_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
             'media' => ['nullable', 'file'],
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
 
         $page = FacebookPage::where('page_id', $validated['page_id'])
             ->where('user_id', auth()->id())
@@ -102,6 +108,12 @@ class FacebookController extends Controller
             $mediaPath = $request->file('media')->store('facebook-media');
         }
 
+        // PERBAIKAN 2: Jika scheduled_at ada, konversi ke format database (Y-m-d H:i:s)
+        $scheduledAt = null;
+        if (!empty($validated['scheduled_at'])) {
+            $scheduledAt = Carbon::createFromFormat('Y-m-d\TH:i', $validated['scheduled_at'])->toDateTimeString();
+        }
+
         $log = FacebookPostLog::create([
             'user_id' => auth()->id(),
             'facebook_user_id' => $page->facebook_user_id,
@@ -109,8 +121,9 @@ class FacebookController extends Controller
             'type' => $validated['type'],
             'message' => $validated['message'] ?? null,
             'media_path' => $mediaPath,
-            'scheduled_at' => $validated['scheduled_at'] ?? null,
-            'status' => empty($validated['scheduled_at']) ? 'queued' : 'scheduled',
+            // Menggunakan $scheduledAt yang sudah dikonversi
+            'scheduled_at' => $scheduledAt,
+            'status' => empty($scheduledAt) ? 'queued' : 'scheduled',
         ]);
 
         $job = new PostToFacebookPage(
@@ -121,8 +134,14 @@ class FacebookController extends Controller
             $log->id,
         );
 
-        if (!empty($validated['scheduled_at'])) {
-            $scheduled = Carbon::parse($validated['scheduled_at']);
+        if (!empty($scheduledAt)) {
+            // PERBAIKAN 3: Jika menggunakan $scheduledAt dari database,
+            // Carbon::parse() seharusnya bekerja dengan baik. Namun,
+            // jika Anda ingin memastikan format yang tepat untuk delay,
+            // lebih baik menggunakan Carbon::createFromFormat seperti di atas.
+            // Tapi karena $scheduledAt sudah di-set ke database format Y-m-d H:i:s,
+            // kita bisa parse dari situ atau dari input asli.
+            $scheduled = Carbon::createFromFormat('Y-m-d\TH:i', $validated['scheduled_at']);
             dispatch($job)->delay($scheduled);
         } else {
             dispatch($job);
