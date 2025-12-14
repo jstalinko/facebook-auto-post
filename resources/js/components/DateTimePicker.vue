@@ -1,24 +1,24 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { CalendarIcon, X } from 'lucide-vue-next'
-import {
-    DatePickerCalendar,
-    DatePickerCell,
-    DatePickerCellTrigger,
-    DatePickerContent,
-    DatePickerGrid,
-    DatePickerGridBody,
-    DatePickerGridHead,
-    DatePickerGridRow,
-    DatePickerHeadCell,
-    DatePickerHeader,
-    DatePickerHeading,
-    DatePickerNext,
-    DatePickerPrev,
-    DatePickerRoot,
-    DatePickerTrigger,
-} from 'reka-ui'
+import { CalendarIcon, ChevronDown, X } from 'lucide-vue-next'
 import { getLocalTimeZone, parseDate } from '@internationalized/date'
+import {
+    CalendarCell,
+    CalendarCellTrigger,
+    CalendarGrid,
+    CalendarGridBody,
+    CalendarGridHead,
+    CalendarGridRow,
+    CalendarHeadCell,
+    CalendarHeader,
+    CalendarHeading,
+    CalendarNext,
+    CalendarPrev,
+    CalendarRoot,
+    PopoverContent,
+    PopoverRoot,
+    PopoverTrigger,
+} from 'reka-ui'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
@@ -38,6 +38,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const selectedDate = ref(null)
 const timeValue = ref('')
+const open = ref(false)
 
 watch(
     () => props.modelValue,
@@ -57,17 +58,16 @@ watch(
 
 watch([selectedDate, timeValue], () => emitValue())
 
-const formattedLabel = computed(() => {
+const dateLabel = computed(() => {
     if (!selectedDate.value) return props.placeholder
 
     const jsDate = selectedDate.value.toDate(getLocalTimeZone())
     const [hours, minutes] = (timeValue.value || '00:00').split(':')
     jsDate.setHours(Number(hours) || 0, Number(minutes) || 0, 0, 0)
 
-    return new Intl.DateTimeFormat('id-ID', {
+    return jsDate.toLocaleString('id-ID', {
         dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(jsDate)
+    })
 })
 
 function emitValue() {
@@ -93,61 +93,82 @@ function clearValue() {
     selectedDate.value = null
     timeValue.value = ''
 }
+
+function onDateSelect(value) {
+    selectedDate.value = value
+    open.value = false
+}
 </script>
 
 <template>
-    <DatePickerRoot v-model="selectedDate" granularity="day">
-        <DatePickerTrigger as-child>
-            <Button variant="outline" class="w-full justify-start gap-2 text-left font-normal">
-                <CalendarIcon class="h-4 w-4" />
-                <span>
-                    {{ formattedLabel }}
-                </span>
+    <div class="flex flex-col gap-3">
+        <div class="grid items-end gap-3 md:grid-cols-[minmax(0,_1fr)_140px]">
+            <div class="space-y-2">
+                <PopoverRoot v-model:open="open">
+                    <PopoverTrigger as-child>
+                        <Button variant="outline"
+                            class="w-full justify-between gap-3 rounded-lg border bg-background px-3 font-normal">
+                            <span class="flex min-w-0 items-center gap-2 text-left">
+                                <CalendarIcon class="h-4 w-4 shrink-0" />
+                                <span class="truncate">{{ dateLabel }}</span>
+                            </span>
+                            <span class="flex items-center gap-2 text-muted-foreground">
+                                <X v-if="selectedDate" class="h-4 w-4" @click.stop="clearValue" />
+                                <ChevronDown class="h-4 w-4" />
+                            </span>
+                        </Button>
+                    </PopoverTrigger>
 
-                <X v-if="selectedDate" class="ml-auto h-4 w-4 opacity-60" @click.stop="clearValue" />
-            </Button>
-        </DatePickerTrigger>
+                    <PopoverContent align="start" class="w-auto p-0">
+                        <CalendarRoot v-model="selectedDate" weekday-format="short" locale="id"
+                            fixed-weeks v-slot="{ weekDays = [], grid = [] }">
+                            <div class="p-3">
+                                <div class="flex items-center justify-between pb-4">
+                                    <CalendarPrev class="h-8 w-8 rounded-md border" />
+                                    <CalendarHeader class="text-sm font-medium">
+                                        <CalendarHeading />
+                                    </CalendarHeader>
+                                    <CalendarNext class="h-8 w-8 rounded-md border" />
+                                </div>
 
-        <DatePickerContent class="w-auto p-3">
-            <DatePickerCalendar v-slot="{ weekDays, grid }">
-                <div class="flex items-center justify-between px-2 pb-4">
-                    <DatePickerPrev class="h-8 w-8 rounded-md border" />
-                    <DatePickerHeader class="text-sm font-medium">
-                        <DatePickerHeading />
-                    </DatePickerHeader>
-                    <DatePickerNext class="h-8 w-8 rounded-md border" />
-                </div>
+                                <div class="space-y-1">
+                                    <CalendarGrid v-for="month in grid || []" :key="month.value?.toString() || ''"
+                                        class="space-y-1">
+                                        <CalendarGridHead>
+                                            <CalendarGridRow class="grid grid-cols-7 text-center text-xs text-muted-foreground">
+                                                <CalendarHeadCell v-for="day in weekDays" :key="day"
+                                                    class="rounded-md py-1 font-medium">
+                                                    {{ day }}
+                                                </CalendarHeadCell>
+                                            </CalendarGridRow>
+                                        </CalendarGridHead>
 
-                <div class="space-y-3">
-                    <DatePickerGrid v-for="month in grid || []" :key="month.value?.toString() || ''" class="space-y-1">
-                        <DatePickerGridHead>
-                            <DatePickerGridRow class="grid grid-cols-7">
-                                <DatePickerHeadCell v-for="day in weekDays" :key="day"
-                                    class="text-muted-foreground rounded-md w-9 text-center text-[0.8rem] font-normal">
-                                    {{ day }}
-                                </DatePickerHeadCell>
-                            </DatePickerGridRow>
-                        </DatePickerGridHead>
-
-                        <DatePickerGridBody>
-                            <DatePickerGridRow v-for="(week, weekIndex) in month.weeks || []" :key="weekIndex"
-                                class="grid grid-cols-7">
-                                <DatePickerCell v-for="day in week" :key="day.value?.toString() || ''" :date="day.value">
-                                    <DatePickerCellTrigger :day="day"
-                                        class="flex h-9 w-9 items-center justify-center rounded-md text-sm font-normal hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected]:bg-primary data-[selected]:text-primary-foreground">
-                                        {{ day.day }}
-                                    </DatePickerCellTrigger>
-                                </DatePickerCell>
-                            </DatePickerGridRow>
-                        </DatePickerGridBody>
-                    </DatePickerGrid>
-                </div>
-            </DatePickerCalendar>
-
-            <div class="mt-3 space-y-1">
-                <p class="text-xs font-medium text-muted-foreground">Jam (24 jam)</p>
-                <Input v-model="timeValue" type="time" step="60" class="h-10" />
+                                        <CalendarGridBody>
+                                            <CalendarGridRow v-for="(week, index) in month.weeks" :key="index"
+                                                class="grid grid-cols-7">
+                                                <CalendarCell v-for="day in week" :key="day.value?.toString() || ''" :date="day.value">
+                                                    <CalendarCellTrigger :day="day"
+                                                        class="flex h-9 w-9 items-center justify-center rounded-md text-sm font-normal hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[selected]:bg-primary data-[selected]:text-primary-foreground"
+                                                        @click="onDateSelect(day.value)">
+                                                        {{ day.day }}
+                                                    </CalendarCellTrigger>
+                                                </CalendarCell>
+                                            </CalendarGridRow>
+                                        </CalendarGridBody>
+                                    </CalendarGrid>
+                                </div>
+                            </div>
+                        </CalendarRoot>
+                    </PopoverContent>
+                </PopoverRoot>
             </div>
-        </DatePickerContent>
-    </DatePickerRoot>
+
+            <div class="space-y-2">
+                <Input v-model="timeValue" type="time" step="60"
+                    class="h-10 rounded-lg border bg-background" />
+            </div>
+        </div>
+
+        <p class="text-xs text-muted-foreground">Pilih tanggal di kiri lalu set waktu (24 jam) untuk menjadwalkan.</p>
+    </div>
 </template>
