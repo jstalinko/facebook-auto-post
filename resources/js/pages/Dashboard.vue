@@ -46,7 +46,8 @@
                                 <div class="space-y-2">
                                     <label class="text-sm font-medium">Tindakan</label>
                                     <div class="flex flex-wrap gap-3">
-                                        <Button variant="outline" @click="syncPages" :disabled="!selectedFacebookUserId">
+                                        <Button variant="outline" @click="syncPages"
+                                            :disabled="!selectedFacebookUserId">
                                             Sync Pages
                                         </Button>
                                         <Button variant="outline" @click="selectedPageIds = []">
@@ -350,46 +351,7 @@ function syncPages() {
     })
 }
 
-const canSubmitBulk = computed(() => {
-    if (!selectedPageIds.value.length) return false
-    if (bulkPostType.value === 'text') {
-        return bulkPostMessage.value.trim().length > 0
-    }
 
-    return bulkMediaFile.value !== null
-})
-
-function handleBulkFileChange(e) {
-    bulkMediaFile.value = e.target.files[0] ?? null
-}
-
-function submitBulkPost() {
-    if (!selectedPageIds.value.length) return
-
-    const form = new FormData()
-    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
-    form.append('type', bulkPostType.value)
-    form.append('message', bulkPostMessage.value)
-
-    if (bulkMediaFile.value) {
-        form.append('media', bulkMediaFile.value)
-    }
-
-    if (bulkScheduledAt.value) {
-        form.append('scheduled_at', bulkScheduledAt.value)
-    }
-
-    router.post('/facebook/bulk-post', form, {
-        preserveScroll: true,
-        onSuccess: () => {
-            bulkMediaFile.value = null
-            bulkPostMessage.value = ''
-            bulkScheduledAt.value = ''
-            bulkPostType.value = 'text'
-            selectedPageIds.value = []
-        },
-    })
-}
 
 const canSubmitBulk = computed(() => {
     if (!selectedPageIds.value.length) return false
