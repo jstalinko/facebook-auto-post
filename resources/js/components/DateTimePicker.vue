@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { CalendarIcon, ChevronDown, X } from 'lucide-vue-next'
+import { CalendarIcon, ChevronDownIcon, X } from 'lucide-vue-next'
 import { getLocalTimeZone, parseDate } from '@internationalized/date'
 import {
     CalendarCell,
@@ -30,7 +30,7 @@ const props = defineProps({
     },
     placeholder: {
         type: String,
-        default: 'Pilih jadwal',
+        default: 'Pilih tanggal',
     },
 })
 
@@ -62,11 +62,11 @@ const dateLabel = computed(() => {
     if (!selectedDate.value) return props.placeholder
 
     const jsDate = selectedDate.value.toDate(getLocalTimeZone())
-    const [hours, minutes] = (timeValue.value || '00:00').split(':')
-    jsDate.setHours(Number(hours) || 0, Number(minutes) || 0, 0, 0)
-
-    return jsDate.toLocaleString('id-ID', {
-        dateStyle: 'medium',
+    return jsDate.toLocaleDateString('id-ID', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
     })
 })
 
@@ -86,7 +86,7 @@ function emitValue() {
     const hour = String(base.getHours()).padStart(2, '0')
     const minute = String(base.getMinutes()).padStart(2, '0')
 
-    emit('update:modelValue', `${year}-${month}-${day}T${hour}:${minute}`)
+    emit('update:modelValue', `${year}-${month}-${day} ${hour}:${minute}`)
 }
 
 function clearValue() {
@@ -101,29 +101,30 @@ function onDateSelect(value) {
 </script>
 
 <template>
-    <div class="flex flex-col gap-3">
-        <div class="grid items-end gap-3 md:grid-cols-[minmax(0,_1fr)_140px]">
-            <div class="space-y-2">
+    <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end">
+            <div class="flex-1 space-y-2">
+                <label class="text-sm font-medium text-foreground">Tanggal</label>
                 <PopoverRoot v-model:open="open">
                     <PopoverTrigger as-child>
                         <Button variant="outline"
-                            class="w-full justify-between gap-3 rounded-lg border bg-background px-3 font-normal">
+                            class="w-full justify-between rounded-lg border bg-background px-3 font-normal">
                             <span class="flex min-w-0 items-center gap-2 text-left">
                                 <CalendarIcon class="h-4 w-4 shrink-0" />
                                 <span class="truncate">{{ dateLabel }}</span>
                             </span>
                             <span class="flex items-center gap-2 text-muted-foreground">
                                 <X v-if="selectedDate" class="h-4 w-4" @click.stop="clearValue" />
-                                <ChevronDown class="h-4 w-4" />
+                                <ChevronDownIcon class="h-4 w-4" />
                             </span>
                         </Button>
                     </PopoverTrigger>
 
                     <PopoverContent align="start" class="w-auto p-0">
-                        <CalendarRoot v-model="selectedDate" weekday-format="short" locale="id"
-                            fixed-weeks v-slot="{ weekDays = [], grid = [] }">
+                        <CalendarRoot v-model="selectedDate" weekday-format="short" locale="id" fixed-weeks
+                            v-slot="{ weekDays = [], grid = [] }">
                             <div class="p-3">
-                                <div class="flex items-center justify-between pb-4">
+                                <div class="flex items-center justify-between pb-3">
                                     <CalendarPrev class="h-8 w-8 rounded-md border" />
                                     <CalendarHeader class="text-sm font-medium">
                                         <CalendarHeading />
@@ -163,12 +164,13 @@ function onDateSelect(value) {
                 </PopoverRoot>
             </div>
 
-            <div class="space-y-2">
+            <div class="w-full space-y-2 md:w-40">
+                <label class="text-sm font-medium text-foreground">Waktu (24 jam)</label>
                 <Input v-model="timeValue" type="time" step="60"
                     class="h-10 rounded-lg border bg-background" />
             </div>
         </div>
 
-        <p class="text-xs text-muted-foreground">Pilih tanggal di kiri lalu set waktu (24 jam) untuk menjadwalkan.</p>
+        <p class="text-xs text-muted-foreground">Atur tanggal dan waktu dalam format 24 jam untuk penjadwalan yang lebih akurat.</p>
     </div>
 </template>
