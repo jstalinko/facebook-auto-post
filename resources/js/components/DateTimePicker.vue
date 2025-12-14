@@ -3,7 +3,14 @@ import { computed, ref, watch } from 'vue'
 import { CalendarIcon, X } from 'lucide-vue-next'
 import {
     DatePickerCalendar,
+    DatePickerCell,
+    DatePickerCellTrigger,
     DatePickerContent,
+    DatePickerGrid,
+    DatePickerGridBody,
+    DatePickerGridHead,
+    DatePickerGridRow,
+    DatePickerHeadCell,
     DatePickerHeader,
     DatePickerHeading,
     DatePickerNext,
@@ -102,15 +109,40 @@ function clearValue() {
         </DatePickerTrigger>
 
         <DatePickerContent class="w-auto p-3">
-            <div class="flex items-center justify-between px-2 pb-2">
-                <DatePickerPrev class="h-8 w-8 rounded-md border" />
-                <DatePickerHeader class="text-sm font-medium">
-                    <DatePickerHeading />
-                </DatePickerHeader>
-                <DatePickerNext class="h-8 w-8 rounded-md border" />
-            </div>
+            <DatePickerCalendar v-slot="{ weekDays, grid }">
+                <div class="flex items-center justify-between px-2 pb-4">
+                    <DatePickerPrev class="h-8 w-8 rounded-md border" />
+                    <DatePickerHeader class="text-sm font-medium">
+                        <DatePickerHeading />
+                    </DatePickerHeader>
+                    <DatePickerNext class="h-8 w-8 rounded-md border" />
+                </div>
 
-            <DatePickerCalendar class="rounded-md" />
+                <div class="space-y-3">
+                    <DatePickerGrid v-for="month in grid || []" :key="month.value?.toString() || ''" class="space-y-1">
+                        <DatePickerGridHead>
+                            <DatePickerGridRow class="grid grid-cols-7">
+                                <DatePickerHeadCell v-for="day in weekDays" :key="day"
+                                    class="text-muted-foreground rounded-md w-9 text-center text-[0.8rem] font-normal">
+                                    {{ day }}
+                                </DatePickerHeadCell>
+                            </DatePickerGridRow>
+                        </DatePickerGridHead>
+
+                        <DatePickerGridBody>
+                            <DatePickerGridRow v-for="(week, weekIndex) in month.weeks || []" :key="weekIndex"
+                                class="grid grid-cols-7">
+                                <DatePickerCell v-for="day in week" :key="day.value?.toString() || ''" :date="day.value">
+                                    <DatePickerCellTrigger :day="day"
+                                        class="flex h-9 w-9 items-center justify-center rounded-md text-sm font-normal hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected]:bg-primary data-[selected]:text-primary-foreground">
+                                        {{ day.day }}
+                                    </DatePickerCellTrigger>
+                                </DatePickerCell>
+                            </DatePickerGridRow>
+                        </DatePickerGridBody>
+                    </DatePickerGrid>
+                </div>
+            </DatePickerCalendar>
 
             <div class="mt-3 space-y-1">
                 <p class="text-xs font-medium text-muted-foreground">Jam (24 jam)</p>
