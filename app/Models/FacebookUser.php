@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class FacebookPage extends Model
+class FacebookUser extends Model
 {
     protected $fillable = [
         'user_id',
-        'facebook_user_id',
-        'page_id',
-        'page_name',
-        'page_access_token',
+        'facebook_id',
+        'name',
+        'access_token',
     ];
 
     public function user(): BelongsTo
@@ -22,9 +21,9 @@ class FacebookPage extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function facebookUser(): BelongsTo
+    public function pages(): HasMany
     {
-        return $this->belongsTo(FacebookUser::class);
+        return $this->hasMany(FacebookPage::class);
     }
 
     public function postLogs(): HasMany
