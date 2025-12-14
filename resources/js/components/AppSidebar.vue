@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -12,20 +12,39 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { AlertTriangle, BookOpen, CheckCircle2, Clock, Folder, LayoutGrid, Send } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
+const mainNavItems = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Post Antrian',
+        href: `${dashboard()}#post-antrian`,
+        icon: Send,
+    },
+    {
+        title: 'Post Terjadwal',
+        href: `${dashboard()}#post-terjadwal`,
+        icon: Clock,
+    },
+    {
+        title: 'Post Selesai',
+        href: `${dashboard()}#post-selesai`,
+        icon: CheckCircle2,
+    },
+    {
+        title: 'Post Gagal',
+        href: `${dashboard()}#post-gagal`,
+        icon: AlertTriangle,
+    },
 ];
 
-const footerNavItems: NavItem[] = [
+const footerNavItems = [
     {
         title: 'Github Repo',
         href: 'https://github.com/laravel/vue-starter-kit',
