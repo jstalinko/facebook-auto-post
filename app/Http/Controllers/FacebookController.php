@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Http;
 use App\Models\FacebookPage;
+use App\Models\FacebookUser;
+use App\Jobs\PostToFacebookPage;
+use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 
 class FacebookController extends Controller
 {
@@ -25,23 +29,33 @@ class FacebookController extends Controller
     {
         $fbUser = Socialite::driver('facebook')->stateless()->user();
 
-        auth()->user()->update([
-            'facebook_id' => $fbUser->id,
-            'facebook_token' => encrypt($fbUser->token),
-        ]);
+        FacebookUser::updateOrCreate(
+            [
+                'user_id' => auth()->id(),
+                'facebook_id' => $fbUser->id,
+            ],
+            [
+                'name' => $fbUser->name ?? $fbUser->nickname ?? 'Facebook User',
+                'access_token' => encrypt($fbUser->token),
+            ]
+        );
 
         return redirect()->route('dashboard');
     }
     public function getPages()
     {
-        $user = auth()->user();
+        $data = request()->validate([
+            'facebook_user_id' => ['required', 'integer', Rule::exists('facebook_users', 'id')->where('user_id', auth()->id())],
+        ]);
 
-        if (!$user->facebook_token) {
+        $facebookUser = FacebookUser::findOrFail($data['facebook_user_id']);
+
+        if (!$facebookUser->access_token) {
             return back()->withErrors('Facebook belum terhubung');
         }
 
         $response = Http::withToken(
-            decrypt($user->facebook_token)
+            decrypt($facebookUser->access_token)
         )->get('https://graph.facebook.com/v19.0/me/accounts');
 
         if (!$response->successful()) {
@@ -55,10 +69,11 @@ class FacebookController extends Controller
 
             FacebookPage::updateOrCreate(
                 [
-                    'user_id' => $user->id,
+                    'user_id' => $facebookUser->user_id,
                     'page_id' => $page['id'],
                 ],
                 [
+                    'facebook_user_id' => $facebookUser->id,
                     'page_name'        => $page['name'],
                     'page_access_token' => encrypt($page['access_token']),
                 ]
@@ -69,15 +84,77 @@ class FacebookController extends Controller
     }
     public function store(Request $request)
     {
-        $page = FacebookPage::where('page_id', $request->page_id)
+        $validated = $request->validate([
+            'page_id' => ['required', 'string'],
+            'type' => ['required', Rule::in(['text', 'photo', 'video'])],
+            'message' => ['nullable', 'string'],
+            'scheduled_at' => ['nullable', 'date'],
+            'media' => ['nullable', 'file'],
+        ]);
+
+        $page = FacebookPage::where('page_id', $validated['page_id'])
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        Http::withToken(decrypt($page->page_access_token))
-            ->post("https://graph.facebook.com/v19.0/{$page->page_id}/feed", [
-                'message' => $request->message,
-            ]);
+        $mediaPath = null;
+        if (in_array($validated['type'], ['photo', 'video']) && $request->file('media')) {
+            $mediaPath = $request->file('media')->store('facebook-media');
+        }
 
-        return back()->with('success', 'Post berhasil dikirim');
+        $job = new PostToFacebookPage(
+            $page->id,
+            $validated['type'],
+            $validated['message'] ?? null,
+            $mediaPath,
+        );
+
+        if (!empty($validated['scheduled_at'])) {
+            $scheduled = Carbon::parse($validated['scheduled_at']);
+            dispatch($job)->delay($scheduled);
+        } else {
+            dispatch($job);
+        }
+
+        return back()->with('success', 'Post berhasil dikirim ke antrian');
+    }
+
+    public function bulkPost(Request $request)
+    {
+        $validated = $request->validate([
+            'page_ids' => ['required', 'array'],
+            'page_ids.*' => ['string'],
+            'type' => ['required', Rule::in(['text', 'photo', 'video'])],
+            'message' => ['nullable', 'string'],
+            'scheduled_at' => ['nullable', 'date'],
+            'media' => ['nullable', 'file'],
+        ]);
+
+        $pages = FacebookPage::whereIn('page_id', $validated['page_ids'])
+            ->where('user_id', auth()->id())
+            ->get();
+
+        $mediaPath = null;
+        if (in_array($validated['type'], ['photo', 'video']) && $request->file('media')) {
+            $mediaPath = $request->file('media')->store('facebook-media');
+        }
+
+        $scheduled = !empty($validated['scheduled_at']) ? Carbon::parse($validated['scheduled_at']) : null;
+
+        foreach ($pages as $page) {
+            $job = new PostToFacebookPage(
+                $page->id,
+                $validated['type'],
+                $validated['message'] ?? null,
+                $mediaPath,
+            );
+
+            if ($scheduled) {
+                dispatch($job)->delay($scheduled);
+            } else {
+                dispatch($job);
+            }
+        }
+
+        return back()->with('success', 'Bulk post berhasil dikirim ke antrian');
     }
 }
