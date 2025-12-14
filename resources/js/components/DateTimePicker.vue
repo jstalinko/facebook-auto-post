@@ -62,12 +62,16 @@ const dateLabel = computed(() => {
     if (!selectedDate.value) return props.placeholder
 
     const jsDate = selectedDate.value.toDate(getLocalTimeZone())
-    return jsDate.toLocaleDateString('id-ID', {
+    const dateText = jsDate.toLocaleDateString('id-ID', {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
         year: 'numeric',
     })
+
+    const timeText = timeValue.value ? `${timeValue.value}` : '00:00'
+
+    return `${dateText} • ${timeText}`
 })
 
 function emitValue() {
@@ -101,76 +105,76 @@ function onDateSelect(value) {
 </script>
 
 <template>
-    <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 md:flex-row md:items-end">
-            <div class="flex-1 space-y-2">
-                <label class="text-sm font-medium text-foreground">Tanggal</label>
-                <PopoverRoot v-model:open="open">
-                    <PopoverTrigger as-child>
-                        <Button variant="outline"
-                            class="w-full justify-between rounded-lg border bg-background px-3 font-normal">
-                            <span class="flex min-w-0 items-center gap-2 text-left">
-                                <CalendarIcon class="h-4 w-4 shrink-0" />
-                                <span class="truncate">{{ dateLabel }}</span>
-                            </span>
-                            <span class="flex items-center gap-2 text-muted-foreground">
-                                <X v-if="selectedDate" class="h-4 w-4" @click.stop="clearValue" />
-                                <ChevronDownIcon class="h-4 w-4" />
-                            </span>
-                        </Button>
-                    </PopoverTrigger>
+    <div class="space-y-2">
+        <label class="text-sm font-medium text-foreground">Tanggal &amp; Waktu (opsional)</label>
 
-                    <PopoverContent align="start" class="w-auto p-0">
-                        <CalendarRoot v-model="selectedDate" weekday-format="short" locale="id" fixed-weeks
-                            v-slot="{ weekDays = [], grid = [] }">
-                            <div class="p-3">
-                                <div class="flex items-center justify-between pb-3">
-                                    <CalendarPrev class="h-8 w-8 rounded-md border" />
-                                    <CalendarHeader class="text-sm font-medium">
-                                        <CalendarHeading />
-                                    </CalendarHeader>
-                                    <CalendarNext class="h-8 w-8 rounded-md border" />
-                                </div>
+        <PopoverRoot v-model:open="open">
+            <PopoverTrigger as-child>
+                <Button variant="outline"
+                    class="h-11 w-full justify-between rounded-lg border bg-background px-3 font-normal shadow-sm">
+                    <span class="flex min-w-0 items-center gap-2 text-left">
+                        <CalendarIcon class="h-4 w-4 shrink-0" />
+                        <span class="truncate">{{ dateLabel }}</span>
+                    </span>
+                    <span class="flex items-center gap-2 text-muted-foreground">
+                        <X v-if="selectedDate" class="h-4 w-4" @click.stop="clearValue" />
+                        <ChevronDownIcon class="h-4 w-4" />
+                    </span>
+                </Button>
+            </PopoverTrigger>
 
-                                <div class="space-y-1">
-                                    <CalendarGrid v-for="month in grid || []" :key="month.value?.toString() || ''"
-                                        class="space-y-1">
-                                        <CalendarGridHead>
-                                            <CalendarGridRow class="grid grid-cols-7 text-center text-xs text-muted-foreground">
-                                                <CalendarHeadCell v-for="day in weekDays" :key="day"
-                                                    class="rounded-md py-1 font-medium">
-                                                    {{ day }}
-                                                </CalendarHeadCell>
-                                            </CalendarGridRow>
-                                        </CalendarGridHead>
+            <PopoverContent align="start" class="w-auto p-0">
+                <CalendarRoot v-model="selectedDate" weekday-format="short" locale="id" fixed-weeks
+                    v-slot="{ weekDays = [], grid = [] }">
+                    <div class="flex flex-col gap-3 p-4">
+                        <div class="flex items-center justify-between">
+                            <CalendarPrev class="h-8 w-8 rounded-md border" />
+                            <CalendarHeader class="text-sm font-medium">
+                                <CalendarHeading />
+                            </CalendarHeader>
+                            <CalendarNext class="h-8 w-8 rounded-md border" />
+                        </div>
 
-                                        <CalendarGridBody>
-                                            <CalendarGridRow v-for="(week, index) in month.weeks" :key="index"
-                                                class="grid grid-cols-7">
-                                                <CalendarCell v-for="day in week" :key="day.value?.toString() || ''" :date="day.value">
-                                                    <CalendarCellTrigger :day="day"
-                                                        class="flex h-9 w-9 items-center justify-center rounded-md text-sm font-normal hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[selected]:bg-primary data-[selected]:text-primary-foreground"
-                                                        @click="onDateSelect(day.value)">
-                                                        {{ day.day }}
-                                                    </CalendarCellTrigger>
-                                                </CalendarCell>
-                                            </CalendarGridRow>
-                                        </CalendarGridBody>
-                                    </CalendarGrid>
-                                </div>
-                            </div>
-                        </CalendarRoot>
-                    </PopoverContent>
-                </PopoverRoot>
-            </div>
+                        <div class="space-y-1 rounded-md border bg-card p-3">
+                            <CalendarGrid v-for="month in grid || []" :key="month.value?.toString() || ''" class="space-y-1">
+                                <CalendarGridHead>
+                                    <CalendarGridRow class="grid grid-cols-7 text-center text-xs text-muted-foreground">
+                                        <CalendarHeadCell v-for="day in weekDays" :key="day" class="rounded-md py-1 font-medium">
+                                            {{ day }}
+                                        </CalendarHeadCell>
+                                    </CalendarGridRow>
+                                </CalendarGridHead>
 
-            <div class="w-full space-y-2 md:w-40">
-                <label class="text-sm font-medium text-foreground">Waktu (24 jam)</label>
-                <Input v-model="timeValue" type="time" step="60"
-                    class="h-10 rounded-lg border bg-background" />
-            </div>
-        </div>
+                                <CalendarGridBody>
+                                    <CalendarGridRow v-for="(week, index) in month.weeks" :key="index" class="grid grid-cols-7">
+                                        <CalendarCell v-for="day in week" :key="day.value?.toString() || ''" :date="day.value">
+                                            <CalendarCellTrigger :day="day"
+                                                class="flex h-9 w-9 items-center justify-center rounded-md text-sm font-normal hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[selected]:bg-primary data-[selected]:text-primary-foreground"
+                                                @click="onDateSelect(day.value)">
+                                                {{ day.day }}
+                                            </CalendarCellTrigger>
+                                        </CalendarCell>
+                                    </CalendarGridRow>
+                                </CalendarGridBody>
+                            </CalendarGrid>
+                        </div>
 
-        <p class="text-xs text-muted-foreground">Atur tanggal dan waktu dalam format 24 jam untuk penjadwalan yang lebih akurat.</p>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-foreground">Waktu (24 jam)</label>
+                            <Input v-model="timeValue" type="time" step="60" inputmode="numeric"
+                                lang="id-ID" pattern="^([01]\\d|2[0-3]):([0-5]\\d)$"
+                                class="h-10 rounded-lg border bg-background font-mono" />
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Gunakan format 24 jam (HH:MM).</span>
+                            <Button variant="ghost" size="sm" class="h-8 px-2" @click="clearValue">
+                                Reset
+                            </Button>
+                        </div>
+                    </div>
+                </CalendarRoot>
+            </PopoverContent>
+        </PopoverRoot>
     </div>
 </template>
