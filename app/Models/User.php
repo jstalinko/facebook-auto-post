@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\FacebookPostLog;
 
 class User extends Authenticatable
 {
@@ -60,5 +61,10 @@ class User extends Authenticatable
     public function facebookPages(): HasMany
     {
         return $this->hasMany(FacebookPage::class);
+    }
+
+    public function facebookPostLogs(): HasMany
+    {
+        return $this->hasMany(FacebookPostLog::class);
     }
 }

@@ -7,6 +7,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Http;
 use App\Models\FacebookPage;
 use App\Models\FacebookUser;
+use App\Models\FacebookPostLog;
 use App\Jobs\PostToFacebookPage;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
@@ -101,11 +102,23 @@ class FacebookController extends Controller
             $mediaPath = $request->file('media')->store('facebook-media');
         }
 
+        $log = FacebookPostLog::create([
+            'user_id' => auth()->id(),
+            'facebook_user_id' => $page->facebook_user_id,
+            'facebook_page_id' => $page->id,
+            'type' => $validated['type'],
+            'message' => $validated['message'] ?? null,
+            'media_path' => $mediaPath,
+            'scheduled_at' => $validated['scheduled_at'] ?? null,
+            'status' => empty($validated['scheduled_at']) ? 'queued' : 'scheduled',
+        ]);
+
         $job = new PostToFacebookPage(
             $page->id,
             $validated['type'],
             $validated['message'] ?? null,
             $mediaPath,
+            $log->id,
         );
 
         if (!empty($validated['scheduled_at'])) {
@@ -133,19 +146,31 @@ class FacebookController extends Controller
             ->where('user_id', auth()->id())
             ->get();
 
-        $mediaPath = null;
-        if (in_array($validated['type'], ['photo', 'video']) && $request->file('media')) {
-            $mediaPath = $request->file('media')->store('facebook-media');
-        }
-
         $scheduled = !empty($validated['scheduled_at']) ? Carbon::parse($validated['scheduled_at']) : null;
 
         foreach ($pages as $page) {
+            $mediaPath = null;
+            if (in_array($validated['type'], ['photo', 'video']) && $request->file('media')) {
+                $mediaPath = $request->file('media')->store('facebook-media');
+            }
+
+            $log = FacebookPostLog::create([
+                'user_id' => auth()->id(),
+                'facebook_user_id' => $page->facebook_user_id,
+                'facebook_page_id' => $page->id,
+                'type' => $validated['type'],
+                'message' => $validated['message'] ?? null,
+                'media_path' => $mediaPath,
+                'scheduled_at' => $scheduled,
+                'status' => $scheduled ? 'scheduled' : 'queued',
+            ]);
+
             $job = new PostToFacebookPage(
                 $page->id,
                 $validated['type'],
                 $validated['message'] ?? null,
                 $mediaPath,
+                $log->id,
             );
 
             if ($scheduled) {
