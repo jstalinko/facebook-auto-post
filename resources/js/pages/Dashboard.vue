@@ -30,12 +30,17 @@
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <label class="text-sm font-medium">Gunakan akun</label>
-                                    <select v-model="selectedFacebookUserId"
-                                        class="w-full rounded-md border px-3 py-2 text-sm shadow-sm">
-                                        <option v-for="fb in facebookUsers" :key="fb.id" :value="fb.id">
-                                            {{ fb.name || 'Facebook User' }}
-                                        </option>
-                                    </select>
+                                    <Select v-model="selectedFacebookUserId">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih akun facebook" />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                            <SelectItem v-for="fb in facebookUsers" :key="fb.id" :value="fb.id">
+                                                {{ fb.name || 'Facebook User' }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div class="space-y-2">
@@ -125,17 +130,21 @@
                         <div class="grid gap-4 md:grid-cols-2">
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Post Type</label>
-                                <select v-model="bulkPostType" class="w-full rounded-md border px-3 py-2 text-sm">
-                                    <option value="text">Text</option>
-                                    <option value="photo">Photo</option>
-                                    <option value="video">Video</option>
-                                </select>
+                                <Select v-model="bulkPostType">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih tipe post" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="text">Text</SelectItem>
+                                        <SelectItem value="photo">Photo</SelectItem>
+                                        <SelectItem value="video">Video</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Schedule (opsional)</label>
-                                <input v-model="bulkScheduledAt" type="datetime-local"
-                                    class="w-full rounded-md border px-3 py-2 text-sm" />
+                                <DateTimePicker v-model="bulkScheduledAt" placeholder="Pilih tanggal & jam" />
                             </div>
                         </div>
 
@@ -166,16 +175,21 @@
                         </DialogHeader>
 
                         <div class="space-y-4">
-                            <div>
-                                <label class="mb-1 block text-sm font-medium">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium">
                                     Post Type
                                 </label>
 
-                                <select v-model="postType" class="w-full rounded-md border px-3 py-2 text-sm">
-                                    <option value="text">Text</option>
-                                    <option value="photo">Photo</option>
-                                    <option value="video">Video</option>
-                                </select>
+                                <Select v-model="postType">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih tipe post" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="text">Text</SelectItem>
+                                        <SelectItem value="photo">Photo</SelectItem>
+                                        <SelectItem value="video">Video</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <Textarea v-if="postType === 'text'" v-model="postMessage"
@@ -184,10 +198,9 @@
                             <input v-if="postType !== 'text'" type="file" class="block w-full text-sm"
                                 @change="handleFileChange" />
 
-                            <div>
-                                <label class="mb-1 block text-sm font-medium">Schedule (opsional)</label>
-                                <input v-model="scheduledAt" type="datetime-local"
-                                    class="w-full rounded-md border px-3 py-2 text-sm" />
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium">Schedule (opsional)</label>
+                                <DateTimePicker v-model="scheduledAt" placeholder="Pilih tanggal & jam" />
                             </div>
                         </div>
 
@@ -235,6 +248,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog'
+import DateTimePicker from '@/components/DateTimePicker.vue'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import StatusTable from '@/components/StatusTable.vue'
