@@ -14,13 +14,32 @@
                 </Button>
             </div>
 
-            <!-- PAGE SECTION -->
-            <div v-else>
+            <div v-else class="space-y-6">
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button as-child variant="secondary">
+                        <a href="/auth/facebook">Tambah Akun Facebook</a>
+                    </Button>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Gunakan akun</label>
+                        <select v-model="selectedFacebookUserId" class="w-64 rounded-md border px-3 py-2 text-sm">
+                            <option v-for="fb in facebookUsers" :key="fb.id" :value="fb.id">
+                                {{ fb.name || 'Facebook User' }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <Button variant="outline" @click="syncPages" :disabled="!selectedFacebookUserId">
+                        Sync Pages
+                    </Button>
+                </div>
+
+                <!-- PAGE SECTION -->
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between">
                         <CardTitle>Facebook Pages</CardTitle>
 
-                        <Button variant="outline" @click="syncPages">
+                        <Button variant="outline" @click="syncPages" :disabled="!selectedFacebookUserId">
                             Sync Pages
                         </Button>
                     </CardHeader>
@@ -30,20 +49,30 @@
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead></TableHead>
                                         <TableHead>Page Name</TableHead>
                                         <TableHead>Page ID</TableHead>
+                                        <TableHead>Akun FB</TableHead>
                                         <TableHead class="text-right">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
 
                                 <TableBody>
                                     <TableRow v-for="p in facebookPages" :key="p.id">
+                                        <TableCell>
+                                            <input v-model="selectedPageIds" :value="p.page_id" type="checkbox"
+                                                class="h-4 w-4 rounded border" />
+                                        </TableCell>
                                         <TableCell class="font-medium">
                                             {{ p.page_name }}
                                         </TableCell>
 
                                         <TableCell class="text-muted-foreground">
                                             {{ p.page_id }}
+                                        </TableCell>
+
+                                        <TableCell class="text-muted-foreground">
+                                            {{ p.facebook_user?.name || 'Akun' }}
                                         </TableCell>
 
                                         <TableCell class="text-right">
@@ -58,6 +87,45 @@
 
                         <div v-else class="py-6 text-center text-sm text-muted-foreground">
                             Belum ada fanspage. Klik <strong>Sync Pages</strong> untuk mengambil data.
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <!-- BULK POST -->
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Bulk Post</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Post Type</label>
+                                <select v-model="bulkPostType" class="w-full rounded-md border px-3 py-2 text-sm">
+                                    <option value="text">Text</option>
+                                    <option value="photo">Photo</option>
+                                    <option value="video">Video</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Schedule (opsional)</label>
+                                <input v-model="bulkScheduledAt" type="datetime-local"
+                                    class="w-full rounded-md border px-3 py-2 text-sm" />
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-2">
+                            <label class="text-sm font-medium">Pesan</label>
+                            <Textarea v-model="bulkPostMessage" placeholder="Tulis konten postingan..." rows="4" />
+                        </div>
+
+                        <div class="mt-4" v-if="bulkPostType !== 'text'">
+                            <input type="file" class="block w-full text-sm" @change="handleBulkFileChange" />
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between">
+                            <p class="text-sm text-muted-foreground">Pilih minimal satu fanspage untuk bulk post.</p>
+                            <Button :disabled="!canSubmitBulk" @click="submitBulkPost">Kirim</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -94,6 +162,12 @@
                             <!-- MEDIA -->
                             <input v-if="postType !== 'text'" type="file" class="block w-full text-sm"
                                 @change="handleFileChange" />
+
+                            <div>
+                                <label class="mb-1 block text-sm font-medium">Schedule (opsional)</label>
+                                <input v-model="scheduledAt" type="datetime-local"
+                                    class="w-full rounded-md border px-3 py-2 text-sm" />
+                            </div>
                         </div>
 
                         <DialogFooter>
@@ -153,23 +227,33 @@ import { dashboard } from '@/routes'
 
 const page = usePage()
 
-const facebookConnected = page.props.facebookConnected
-/** @type {FacebookPage[]} */
-const facebookPages = page.props.facebookPages
+const facebookUsers = computed(() => page.props.facebookUsers || [])
+const facebookPages = computed(() => page.props.facebookPages || [])
+const facebookConnected = computed(() => facebookUsers.value.length > 0)
+
+const selectedFacebookUserId = ref(facebookUsers.value[0]?.id || null)
 
 const showPostModal = ref(false)
-/** @type {import('vue').Ref<FacebookPage|null>} */
 const selectedPage = ref(null)
 
 const postType = ref('text')
 const postMessage = ref('')
 const mediaFile = ref(null)
+const scheduledAt = ref('')
+
+const selectedPageIds = ref([])
+
+const bulkPostType = ref('text')
+const bulkPostMessage = ref('')
+const bulkMediaFile = ref(null)
+const bulkScheduledAt = ref('')
 
 function openCreatePost(p) {
     selectedPage.value = p
     postType.value = 'text'
     postMessage.value = ''
     mediaFile.value = null
+    scheduledAt.value = ''
     showPostModal.value = true
 }
 
@@ -199,17 +283,67 @@ function submitPost() {
         form.append('message', postMessage.value)
     }
 
+    if (scheduledAt.value) {
+        form.append('scheduled_at', scheduledAt.value)
+    }
+
     router.post('/facebook/post', form, {
         preserveScroll: true,
         onSuccess: () => {
             showPostModal.value = false
+            scheduledAt.value = ''
         },
     })
 }
 
 function syncPages() {
+    if (!selectedFacebookUserId.value) return
+
     router.post('/facebook/get-pages', {
+        facebook_user_id: selectedFacebookUserId.value,
+    }, {
         preserveScroll: true,
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!selectedPageIds.value.length) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
     })
 }
 
