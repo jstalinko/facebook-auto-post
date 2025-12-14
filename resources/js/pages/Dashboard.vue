@@ -298,12 +298,14 @@ function handleFileChange(e) {
     mediaFile.value = e.target.files[0] ?? null
 }
 
+const trimmedMessage = computed(() => postMessage.value.trim())
+
 const canSubmit = computed(() => {
     if (postType.value === 'text') {
-        return postMessage.value.trim().length > 0
+        return trimmedMessage.value.length > 0
     }
 
-    return mediaFile.value !== null
+    return mediaFile.value !== null && trimmedMessage.value.length > 0
 })
 
 function submitPost() {
