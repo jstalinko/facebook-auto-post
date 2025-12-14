@@ -252,6 +252,7 @@ import DateTimePicker from '@/components/DateTimePicker.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import StatusTable from '@/components/StatusTable.vue'
 import { dashboard } from '@/routes'
 
 /**
@@ -339,6 +340,13 @@ function syncPages() {
         facebook_user_id: selectedFacebookUserId.value,
     }, {
         preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
     })
 }
 
