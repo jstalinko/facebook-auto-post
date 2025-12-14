@@ -149,9 +149,8 @@
                         </div>
 
                         <div class="mt-4 space-y-2">
-                            <label class="text-sm font-medium">Caption / Pesan</label>
+                            <label class="text-sm font-medium">Pesan</label>
                             <Textarea v-model="bulkPostMessage" placeholder="Tulis konten postingan..." rows="4" />
-                            <p class="text-xs text-muted-foreground">Caption akan digunakan untuk foto dan video juga.</p>
                         </div>
 
                         <div class="mt-4" v-if="bulkPostType !== 'text'">
@@ -193,18 +192,11 @@
                                 </Select>
                             </div>
 
-                            <div class="space-y-2">
-                                <label class="block text-sm font-medium">
-                                    Caption / Pesan
-                                </label>
-                                <Textarea v-model="postMessage" placeholder="Tulis konten atau caption..." rows="4" />
-                                <p class="text-xs text-muted-foreground">Wajib diisi untuk semua tipe post.</p>
-                            </div>
+                            <Textarea v-if="postType === 'text'" v-model="postMessage"
+                                placeholder="Tulis konten postingan..." rows="5" />
 
-                            <div v-if="postType !== 'text'" class="space-y-2">
-                                <label class="block text-sm font-medium">Media</label>
-                                <input type="file" class="block w-full text-sm" @change="handleFileChange" />
-                            </div>
+                            <input v-if="postType !== 'text'" type="file" class="block w-full text-sm"
+                                @change="handleFileChange" />
 
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium">Schedule (opsional)</label>
@@ -260,6 +252,7 @@ import DateTimePicker from '@/components/DateTimePicker.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import StatusTable from '@/components/StatusTable.vue'
 import { dashboard } from '@/routes'
 
 /**
@@ -349,18 +342,228 @@ function syncPages() {
         facebook_user_id: selectedFacebookUserId.value,
     }, {
         preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
     })
 }
-
-const bulkTrimmedMessage = computed(() => bulkPostMessage.value.trim())
 
 const canSubmitBulk = computed(() => {
     if (!selectedPageIds.value.length) return false
     if (bulkPostType.value === 'text') {
-        return bulkTrimmedMessage.value.length > 0
+        return bulkPostMessage.value.trim().length > 0
     }
 
-    return bulkMediaFile.value !== null && bulkTrimmedMessage.value.length > 0
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!selectedPageIds.value.length) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!selectedPageIds.value.length) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!canSubmitBulk.value) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!canSubmitBulk.value) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!canSubmitBulk.value) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
 })
 
 function handleBulkFileChange(e) {

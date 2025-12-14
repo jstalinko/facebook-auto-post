@@ -88,7 +88,7 @@ class FacebookController extends Controller
         $validated = $request->validate([
             'page_id' => ['required', 'string'],
             'type' => ['required', Rule::in(['text', 'photo', 'video'])],
-            'message' => ['required', 'string', 'min:1'],
+            'message' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date'],
             'media' => ['nullable', 'file'],
         ]);
@@ -137,7 +137,7 @@ class FacebookController extends Controller
             'page_ids' => ['required', 'array'],
             'page_ids.*' => ['string'],
             'type' => ['required', Rule::in(['text', 'photo', 'video'])],
-            'message' => ['required', 'string', 'min:1'],
+            'message' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date'],
             'media' => ['nullable', 'file'],
         ]);
