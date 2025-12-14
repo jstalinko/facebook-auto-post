@@ -252,6 +252,7 @@ import DateTimePicker from '@/components/DateTimePicker.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import StatusTable from '@/components/StatusTable.vue'
 import { dashboard } from '@/routes'
 
 /**
@@ -339,6 +340,95 @@ function syncPages() {
         facebook_user_id: selectedFacebookUserId.value,
     }, {
         preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!selectedPageIds.value.length) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
+    })
+}
+
+const canSubmitBulk = computed(() => {
+    if (!selectedPageIds.value.length) return false
+    if (bulkPostType.value === 'text') {
+        return bulkPostMessage.value.trim().length > 0
+    }
+
+    return bulkMediaFile.value !== null
+})
+
+function handleBulkFileChange(e) {
+    bulkMediaFile.value = e.target.files[0] ?? null
+}
+
+function submitBulkPost() {
+    if (!selectedPageIds.value.length) return
+
+    const form = new FormData()
+    selectedPageIds.value.forEach(id => form.append('page_ids[]', id))
+    form.append('type', bulkPostType.value)
+    form.append('message', bulkPostMessage.value)
+
+    if (bulkMediaFile.value) {
+        form.append('media', bulkMediaFile.value)
+    }
+
+    if (bulkScheduledAt.value) {
+        form.append('scheduled_at', bulkScheduledAt.value)
+    }
+
+    router.post('/facebook/bulk-post', form, {
+        preserveScroll: true,
+        onSuccess: () => {
+            bulkMediaFile.value = null
+            bulkPostMessage.value = ''
+            bulkScheduledAt.value = ''
+            bulkPostType.value = 'text'
+            selectedPageIds.value = []
+        },
     })
 }
 
